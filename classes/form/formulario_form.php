@@ -28,7 +28,14 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/formslib.php');
 
+/**
+ * Class formulario_form
+ * Aqui ponemos los formularios.
+ */
 class formulario_form extends \moodleform {
+    /**
+     * Define los elementos del formulario.
+     */
     public function definition() {
         $mform = $this->_form;
 
@@ -42,5 +49,20 @@ class formulario_form extends \moodleform {
 
         // Botón de envío.
         $mform->addElement('submit', 'submitbutton', get_string('submit', 'report_coursereport'));
+    }
+
+    /**
+     * Define los elementos del formulario.
+     */
+    public function definicion() {
+        $mform = $this->_form;
+
+        $choices = [
+            '' => get_string('selectadownload', 'report_coursereport'),
+            'csv' => get_string('downloadascsv', 'report_coursereport'),
+            'excel' => get_string('downloadasexcel', 'report_coursereport') ];
+
+        $mform->addElement('select', 'format', get_string('downloadformat', 'report_coursereport'), $choices);
+        $mform->addElement('submit', 'download', get_string('download', 'report_coursereport'));
     }
 }

@@ -35,77 +35,86 @@ $action = required_param('action', PARAM_ALPHANUMEXT);
 $shortname = optional_param('shortname', '', PARAM_NOTAGS);
 $fullname = optional_param('fullname', '', PARAM_NOTAGS);
 
-
+global $SESSION;
+/**
+ * Class descargaarchivos
+ * Descarga formatos de archivos.
+ */
 class descargaarchivos {
+    /**
+     * Descarga el archivo CSV con los datos de los cursos filtrados.
+     */
+    public static function download_csv() {
+        global $SESSION;
 
-    public static function download_csv($courses) {
-        // Asegura que no hay salida antes de enviar headers
-        ob_start();
-    
-        // Configura los headers adecuados para descarga de archivo CSV
+        // Verifica si los datos necesarios están en la sesión.
+        if (!isset($SESSION->coursereport_filter) || empty($SESSION->coursereport_filter)) {
+            die('Datos de sesión no configurados o vacíos. Por favor, realice una búsqueda primero.');
+        }
+
+        // Prepara los headers para descargar el archivo CSV.
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="cursos.csv"');
-    
-        // Abre la salida de PHP directamente al flujo de salida para evitar uso de memoria excesivo
+
+        // Abre el flujo de salida para escribir el archivo CSV.
         $output = fopen('php://output', 'w');
-        if (!$output) {
-            ob_end_clean(); // Limpia el buffer y deshabilita
-            die('No se pudo abrir el flujo de salida');
-        }
-    
-        // Agrega BOM para UTF-8 si necesario
-        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
-    
-        // Define las cabeceras de las columnas en el CSV
-        $headers = array('Nombre del Curso', 'Fecha de Inicio', 'Fecha de Finalización');
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF)); // Agrega BOM para UTF-8.
+
+        // Encabezados del CSV.
+        $headers = ['Nombre del Curso', 'Fecha de Inicio', 'Fecha de Finalización'];
         fputcsv($output, $headers);
-    
-        // Itera sobre cada curso y escribe los datos en el archivo CSV
-        foreach ($courses as $course) {
-            $row = array(
-                $course->name,
+
+        // Escribe los datos de los cursos en el archivo CSV.
+        foreach ($SESSION->coursereport_filter as $course) {
+            $row = [
+                $course->shortname,
                 date('d-m-Y', $course->startdate),
-                date('d-m-Y', $course->enddate)
-            );
+                date('d-m-Y', $course->enddate)];
             fputcsv($output, $row);
         }
-    
-        // Cierra el flujo de salida y limpia el buffer
-        fclose($output);
-        ob_end_flush();
-    }
-    
 
-    public static function download_excel($courses) {
-        global $CFG;
+        // Cierra el flujo de salida.
+        fclose($output);
+        exit;
+    }
+
+    /**
+     * Descarga el archivo Excel con los datos de los cursos filtrados.
+     */
+    public static function download_excel() {
+        global $CFG, $SESSION;
         require_once($CFG->libdir . '/excellib.class.php');
-    
-        // Configura los headers adecuados para la descarga del archivo Excel
+
+        if (!isset($SESSION->coursereport_filter) || empty($SESSION->coursereport_filter)) {
+            die('Datos de sesión no configurados o vacíos. Por favor, realice una búsqueda primero.');
+        }
+
+        // Configura los headers adecuados para la descarga del archivo Excel.
         $filename = "cursos_exportados_" . userdate(time(), '%d%m%Y') . ".xlsx";
         header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         header("Content-Disposition: attachment;filename=\"{$filename}\"");
         header("Cache-Control: max-age=0");
-    
-        // Crea una instancia de MoodleExcelWorkbook
+
+        // Crea una instancia de MoodleExcelWorkbook.
         $workbook = new \MoodleExcelWorkbook("-");
         $workbook->send($filename);
-    
-        // Añade una hoja de cálculo
+
+        // Añade una hoja de cálculo.
         $worksheet = $workbook->add_worksheet(get_string('cursos', 'report_coursereport'));
-    
-        // Define las cabeceras para las columnas
-        $headers = array('CursoID', 'Nombre Corto', 'Nombre Largo', 'Fecha Inicio', 'Fecha Fin');
+
+        // Define las cabeceras para las columnas.
+        $headers = ['CursoID', 'Nombre Corto', 'Nombre Largo', 'Fecha Inicio', 'Fecha Fin'];
         $row = 0;
         $col = 0;
-    
-        // Escribe las cabeceras en la primera fila
+
+        // Escribe las cabeceras en la primera fila.
         foreach ($headers as $header) {
             $worksheet->write_string($row, $col++, $header);
         }
-    
-        // Escribe los datos de los cursos
+
+        // Escribe los datos de los cursos.
         $row = 1;
-        foreach ($courses as $course) {
+        foreach ($SESSION->coursereport_filter as $course) {
             $col = 0;
             $worksheet->write_string($row, $col++, $course->id);
             $worksheet->write_string($row, $col++, $course->shortname);
@@ -114,27 +123,21 @@ class descargaarchivos {
             $worksheet->write_string($row, $col++, userdate($course->enddate, get_string('strftimedate', 'langconfig')));
             $row++;
         }
-    
-        // Cierra el libro de Excel y envía el archivo
+
+        // Cierra el libro de Excel y envía el archivo.
         $workbook->close();
     }
 
-}    
-
-// Lógica para manejar la entrada y decidir qué acción tomar
-$action = required_param('action', PARAM_ALPHA);
-
-switch ($action) {
-    case 'csv':
-        $courses = fetch_courses_by_search($shortname, $fullname, $offset, $perpage);
-        descargaarchivos::download_csv($courses);
-        break;
-    case 'excel':
-        $courses = fetch_courses_by_search($shortname, $fullname, $offset, $perpage);
-        descargaarchivos::download_excel($courses);
-        break;
-    default:
-        throw new \moodle_exception('invalidaction', 'error');
 }
 
-exit;
+// Ejecuta la acción correspondiente.
+switch ($action) {
+    case 'csv':
+        descargaarchivos::download_csv();
+        break;
+    case 'excel':
+        descargaarchivos::download_excel();
+        break;
+    default:
+        throw new moodle_exception('invalidaction', 'error');
+}

@@ -33,3 +33,9 @@ $string['submit'] = 'Submit';
 $string['pluginname'] = 'Course Report';
 $string['downloadcsv'] = 'Descargar como CSV';
 $string['downloadexcel'] = 'Descargar como EXCEL';
+
+$string['download'] = 'Descargar como: ';
+$string['downloadascsv'] = 'Descargar como CSV';
+$string['downloadasexcel'] = 'Descargar como Excel';
+$string['selectadownload'] = 'Seleccione un formato para descargar';
+$string['downloadformat'] = 'Formato de descarga';

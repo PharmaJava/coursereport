@@ -52,4 +52,5 @@ if ($data = $form->get_data()) {
  // Mostrar la página del formulario.
 echo $OUTPUT->header();
 $form->display();
+
 echo $OUTPUT->footer();

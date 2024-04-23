@@ -21,7 +21,15 @@
  * @copyright   2024 Antonio <your@email>
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Obtiene cursos filtrados por búsqueda.
+ *
+ * @param string $shortname Nombre corto del curso.
+ * @param string $fullname  Nombre largo del curso.
+ * @param int    $offset    Desplazamiento de resultados.
+ * @param int    $perpage   Número de resultados por página.
+ * @return array            Array de registros de cursos.
+ */
 function fetch_courses_by_search($shortname, $fullname, $offset, $perpage) {
     global $DB;
     $params = [];
@@ -42,7 +50,13 @@ function fetch_courses_by_search($shortname, $fullname, $offset, $perpage) {
     $sql = "SELECT * FROM {course} $sqlwhere ORDER BY id ASC";
     return $DB->get_records_sql($sql, $params, $offset, $perpage);
 }
-
+/**
+ * Cuenta cursos filtrados por búsqueda.
+ *
+ * @param string $shortname Nombre corto del curso.
+ * @param string $fullname  Nombre largo del curso.
+ * @return int              Número total de cursos encontrados.
+ */
 function count_courses_by_search($shortname, $fullname) {
     global $DB;
     $params = [];
@@ -62,4 +76,5 @@ function count_courses_by_search($shortname, $fullname) {
 
     $sql = "SELECT COUNT(id) FROM {course} $where";
     return $DB->count_records_sql($sql, $params);
-} 
+}
+
