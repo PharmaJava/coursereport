@@ -36,10 +36,10 @@ class renderer extends \plugin_renderer_base {
     /**
      * Render search results.
      *
-     * @param array  $courses   Array of courses.
-     * @param int    $totalcount Total number of courses.
-     * @param int    $page      Current page number.
-     * @param int    $perpage   Number of courses per page.
+     * @param array  $courses   Array de cursos.
+     * @param int    $totalcount Total numero de cursos.
+     * @param int    $page      Pagina actual.
+     * @param int    $perpage   Numero de cursos por pagina.
      * @param string $baseurl   Base URL.
      * @return string Rendered HTML.
      */
