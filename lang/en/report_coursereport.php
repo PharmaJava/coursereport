@@ -39,3 +39,13 @@ $string['downloadascsv'] = 'Descargar como CSV';
 $string['downloadasexcel'] = 'Descargar como Excel';
 $string['selectadownload'] = 'Seleccione un formato para descargar';
 $string['downloadformat'] = 'Formato de descarga';
+$string['ayuda'] = 'el nombre del curso';
+$string['ayuda_help'] = 'Este es el texto que explica el nombre largo del curso.';
+
+
+$string['viewstudents'] = 'Ver Alumnos';
+$string['errornopermissions'] = 'No tienes permisos suficientes para realizar esta acción.';
+$string['error'] = 'Error';
+$string['studentlist'] = 'Lista de alumnos';
+$string['nostudents'] = 'No hay estudiantes matriculados o no se encontraron datos.';
+$string['loadingstudents'] = 'Cargando lista de alumnos...';

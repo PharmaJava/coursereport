@@ -31,7 +31,9 @@ require_once($CFG->dirroot . '/report/coursereport/lib.php');
 $title = get_string('pluginname', 'report_coursereport');
 
 // Configurar contexto, URL, título y encabezado de la página.
-$PAGE->set_context(context_system::instance());
+$context = context_system::instance();
+require_capability('report/coursereport:view', $context);
+
 $PAGE->set_url(new moodle_url('/report/coursereport/index.php'));
 $PAGE->set_title($title);
 $PAGE->set_heading($title);
@@ -56,19 +58,21 @@ $perpage = optional_param('perpage', 10, PARAM_INT);
 $count = optional_param('count', 0, PARAM_INT);
 
 // Si el conteo es cero, asumir que es la primera carga o necesita recálculo.
-if ($count == 0) {
-      $count = count_courses_by_search($shortname, $fullname);
+if ($count == 0 && (!empty($shortname) || !empty($fullname))) {
+    $count = count_courses_by_search($shortname, $fullname);
 }
 
 // Asegurar que el formulario muestre los datos actuales.
-$searchform->set_data(['shortname' => $shortname, 'fullname' => $fullname]);
+// $searchform->set_data(['shortname' => $shortname, 'fullname' => $fullname]);
 
 // Si hay términos de búsqueda, buscar cursos; de lo contrario, el array de cursos está vacío.
 if (!empty($shortname) || !empty($fullname)) {
-      $courses = fetch_courses_by_search($shortname, $fullname, $page, $perpage, $perpage);
-      $SESSION->coursereport_filter = $courses;
+    $courses = fetch_courses_by_search($shortname, $fullname, $page * $perpage, $perpage);
+
+        $SESSION->coursereport_filter = $courses;
 } else {
-      $courses = [];
+        $courses = [];
+        $count = 0;
 }
 
 // Mostrar formulario de búsqueda.
@@ -81,5 +85,9 @@ $baseurl = new moodle_url('/report/coursereport/index.php', [
     'count' => $count]);
 
 // Mostrar resultados de búsqueda y paginación.
-echo $renderer->render_search_results($courses, $count, $page, $perpage, $baseurl);
+
+if ($count > 0) {
+    echo $renderer->render_search_results($courses, $count, $page, $perpage, $baseurl);
+}
+
 echo $OUTPUT->footer();
