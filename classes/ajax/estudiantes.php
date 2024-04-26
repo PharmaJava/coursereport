@@ -21,85 +21,60 @@
  * @copyright   2024 Antonio <your@email>
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+require_once('../../../../config.php');
+require_once($CFG->libdir . '/gradelib.php');
+require_once($CFG->dirroot . '/lib/completionlib.php');
 
-    // require_once '../../../../config.php';
+global $DB, $PAGE;
 
-    // global $DB, $USER;
-    
-    // header('Content-Type: application/json');
-    // // Verificar login y permisos necesarios.
-    // require_login();
-    // if (!is_siteadmin() && !has_capability('moodle/course:viewparticipants', context_system::instance())) {
-    //     echo json_encode(['error' => 'No tienes permisos suficientes para realizar esta acción.']);
-    //     exit;
-    // }
-    
-    // $courseid = required_param('courseid', PARAM_INT);
-    
-    // $sql = "SELECT u.id, u.firstname, u.lastname
-    //         FROM {user} u
-    //         JOIN {user_enrolments} ue ON ue.userid = u.id
-    //         JOIN {enrol} e ON e.id = ue.enrolid
-    //         WHERE e.courseid = :courseid
-    //         AND ue.status = 0
-    //         AND u.deleted = 0
-    //         AND u.suspended = 0
-    //         AND EXISTS (
-    //             SELECT 1
-    //             FROM {role_assignments} ra
-    //             JOIN {context} ctx ON ctx.id = ra.contextid
-    //             WHERE ctx.instanceid = e.courseid
-    //             AND ra.roleid = (SELECT id FROM {role} WHERE shortname = 'student')
-    //             AND ra.userid = u.id
-    //         )";
-    
-    // try {
-    //     $students = $DB->get_records_sql($sql, ['courseid' => $courseid]);
-    //     $results = array_map(function($student) {
-    //         return [
-    //             'id' => $student->id,
-    //             'firstname' => $student->firstname,
-    //             'lastname' => $student->lastname
-    //         ];
-    //     }, array_values($students));
-    //     echo json_encode($results);
-    // } catch (Exception $e) {
-    //     echo json_encode(['error' => 'Error al obtener los estudiantes del curso.']);
-    // }
+ // Verificar que el usuario esté autenticado y tenga los permisos necesarios.
+require_login();
+$courseid = required_param('courseid', PARAM_INT);  // Obtener el ID del curso desde los parámetros de la URL.
+$context = context_course::instance($courseid);  // Obtener el contexto del curso.
+require_capability('moodle/course:viewparticipants', $context);  // Verificar permisos.
 
+ // Obtener datos del curso asegurando que el curso existe
+$course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
+$completion = new completion_info($course);  // Instancia para manejar la información de finalización del curso.
 
-require_once('../../../../config.php');  
-global $DB, $OUTPUT;
+// Preparar la consulta SQL para obtener los estudiantes y sus calificaciones finales.
+$sql = "SELECT u.id, u.firstname, u.lastname, u.email, u.username,
+        gg.finalgrade
+    FROM {user} u
+    JOIN {user_enrolments} ue ON ue.userid = u.id
+    JOIN {enrol} e ON e.id = ue.enrolid
+    JOIN {role_assignments} ra ON ra.userid = u.id
+    JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ctx.instanceid = e.courseid
+    JOIN {role} r ON r.id = ra.roleid AND r.shortname = 'student'
+    LEFT JOIN {grade_grades} gg ON gg.userid = u.id
+    LEFT JOIN {grade_items} gi ON gi.id = gg.itemid AND gi.courseid = e.courseid AND gi.itemtype = 'course'
+    WHERE e.courseid = :courseid AND ue.status = 0 AND u.deleted = 0 AND u.suspended = 0
+    GROUP BY u.id";
 
-require_login();  
-$context = context_system::instance();
-require_capability('moodle/site:viewreports', $context); 
+$params = ['courseid' => $courseid];
+$students = $DB->get_records_sql($sql, $params);  // Ejecutar la consulta y obtener los registros.
 
-$courseid = required_param('courseid', PARAM_INT);  // Obtener el ID del curso de los parámetros de la solicitud.
+$studentData = [];
+foreach ($students as $student) {
+     // Calcular el porcentaje de completitud de cada estudiante
+    $completions = $completion->get_completions($student->id);
+    $completed = count(array_filter($completions, function ($comp) {
+         return $comp->is_complete();  // Filtrar sólo las actividades completadas.
+    }));
+    $total = count($completions);
+     $completionpercent = $total > 0 ? round(($completed / $total) * 100) : 0;  // Calcular el porcentaje.
 
-header('Content-Type: application/html');  
-
-try {
-    // Consulta SQL para obtener los alumnos matriculados que no están borrados ni suspendidos.
-    $sql = "SELECT u.id, u.firstname, u.lastname
-            FROM {user} u
-            JOIN {user_enrolments} ue ON ue.userid = u.id
-            JOIN {enrol} e ON e.id = ue.enrolid
-            JOIN {role_assignments} ra ON ra.userid = u.id
-            JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-            WHERE e.courseid = :courseid
-            AND ue.status = 0
-            AND u.deleted = 0
-            AND u.suspended = 0
-            AND ra.roleid = (SELECT id FROM {role} WHERE shortname = 'student')
-            AND ctx.instanceid = e.courseid";
-    
-    $students = $DB->get_records_sql($sql, ['courseid' => $courseid]);
-    $data = ['students' => array_values($students)];  // Prepara los datos para la plantilla Mustache.
-
-    // Renderiza la plantilla Mustache y devuelve el HTML.
-    echo $OUTPUT->render_from_template('report_coursereport/listaestudiantes', $data);
-} catch (Exception $e) {
-    http_response_code(500);
-    echo 'Error al obtener los estudiantes del curso: ' . $e->getMessage();
+     // Preparar los datos de los estudiantes para la plantilla Mustache.
+    $studentData[] = [
+        'firstname' => $student->firstname,
+        'lastname' => $student->lastname,
+        'email' => $student->email,
+        'username' => $student->username,
+         'completion' => "{$completionpercent}%"  // Añadir el porcentaje de completitud.
+    ];
 }
+
+ // Renderizar la plantilla Mustache con los datos preparados.
+$renderer = $PAGE->get_renderer('report_coursereport');
+echo $renderer->render_from_template('report_coursereport/listaestudiantes', ['students' => $studentData]);
+

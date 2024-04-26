@@ -33,36 +33,62 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
+// document.addEventListener('DOMContentLoaded', function() {
+//     document.querySelectorAll('.ver-alumnos-btn').forEach(button => {
+//         button.addEventListener('click', function() {
+//             var courseid = this.getAttribute('data-courseid');
+//             var url = '/moodle/report/coursereport/classes/ajax/estudiantes.php?courseid=' + courseid;
+//             var container = this.closest('tr').nextElementSibling; // Asegura que este es el contenedor correcto.
+
+//             // Cambia la visibilidad del contenedor dependiendo de su estado actual.
+//             if (container.style.display === 'none' || container.style.display === '') {
+//                 fetch(url)
+//                     .then(response => {
+//                         if (!response.ok) {
+//                             throw new Error('La respuesta de la red no fue satisfactoria.');
+//                         }
+//                         return response.text();
+//                     })
+//                     .then(html => {
+//                         container.querySelector('td').innerHTML = html; // Inserta el HTML en el contenedor.
+//                         container.style.display = 'table-row'; // Muestra el contenedor.
+//                     })
+//                     .catch(error => {
+//                         container.querySelector('td').innerHTML = 'Error al cargar los datos.';
+//                         container.style.display = 'table-row';
+//                     });
+//             } else {
+//                 container.style.display = 'none'; // Oculta los detalles si ya están visibles.
+//             }
+//         });
+//     });
+// });
+
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.ver-alumnos-btn').forEach(button => {
+    document.querySelectorAll('.ver-alumnos-btn').forEach(function(button) {
         button.addEventListener('click', function() {
             var courseid = this.getAttribute('data-courseid');
             var url = '/moodle/report/coursereport/classes/ajax/estudiantes.php?courseid=' + courseid;
-            var container = this.closest('tr').nextElementSibling; // Asegura que este es el contenedor correcto.
+            var container = this.closest('tr').nextElementSibling; // Contenedor para los detalles de los estudiantes
 
-            // Cambia la visibilidad del contenedor dependiendo de su estado actual.
-            if (container.style.display === 'none' || container.style.display === '') {
-                fetch(url)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('La respuesta de la red no fue satisfactoria.');
-                        }
-                        return response.text();
-                    })
-                    .then(html => {
-                        container.querySelector('td').innerHTML = html; // Inserta el HTML en el contenedor.
-                        container.style.display = 'table-row'; // Muestra el contenedor.
-                    })
-                    .catch(error => {
-                        container.querySelector('td').innerHTML = 'Error al cargar los datos.';
-                        container.style.display = 'table-row';
-                    });
+            if (container && container.style.display !== 'none') {
+                container.style.display = 'none'; // Ocultar si ya está visible
             } else {
-                container.style.display = 'none'; // Oculta los detalles si ya están visibles.
+                // Mostrar y cargar los datos si está oculto
+                fetch(url)
+                .then(response => response.text()) // Respuesta como HTML
+                .then(html => {
+                    container.querySelector('td').innerHTML = html; // Insertar HTML en el contenedor
+                    container.style.display = 'table-row'; // Mostrar contenedor
+                })
+                .catch(error => {
+                    console.error('Error al recuperar la lista de alumnos:', error);
+                    container.querySelector('td').textContent = 'Error al cargar los datos.';
+                    container.style.display = 'table-row';
+                });
             }
         });
     });
 });
-
 
 

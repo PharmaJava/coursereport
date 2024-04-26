@@ -15,11 +15,39 @@
     along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 
-<ul>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Apellido</th>
+      <th>Email</th>
+      <th>Username</th>
+      <th>Nota</th>
+      <th>Completitud</th>
+    </tr>
+  </thead>
+  <tbody>
     {{#students}}
-    <li>{{firstname}} {{lastname}}</li>
+    <tr>
+      <td>{{firstname}}</td>
+      <td>{{lastname}}</td>
+      <td>{{email}}</td>
+      <td>{{username}}</td>
+      <td>{{grade}}</td>
+      <td>{{completion}}</td>
+    </tr>
     {{/students}}
-    {{^students}}
-    No hay estudiantes matriculados o no se encontraron datos.
-    {{/students}}
-</ul>
+  </tbody>
+</table>
+
+{{^students}}
+<div class="alert alert-info" role="alert">
+  No hay estudiantes matriculados en este curso.
+</div>
+{{/students}}
+
+
+
+
+
+
